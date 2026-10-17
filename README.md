@@ -1,7 +1,9 @@
 # GK Control Center
 
-# WARNING, THIS PROGRAM IS WINDOWS ONLY AND IS NOT COMPATIBLE WITH AMD GPUs.
-(IF YOU WANT THE LINUX VERSION, PLEASE HEAD TO THE LINUX BRANCH) The accessiblity for other OS's and GPU types will be expanded in the future, sorry for the inconvenience. 0_0
+#(IF YOU WANT THE LINUX VERSION, PLEASE HEAD TO THE LINUX BRANCH)
+ 
+ WARNING, THIS PROGRAM IS WINDOWS ONLY AND IS NOT COMPATIBLE WITH AMD GPUs.
+ The accessiblity for other OS's and GPU types will be expanded in the future, sorry for the inconvenience. 0_0
 
 A sleek, real-time system monitor built with **Tauri 2 + React + TypeScript**, styled in a warm-monochrome design language.
 
