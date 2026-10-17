@@ -1,6 +1,6 @@
 # GK Control Center
 
-#(IF YOU WANT THE LINUX VERSION, PLEASE HEAD TO THE LINUX BRANCH)
+# (IF YOU WANT THE LINUX VERSION, PLEASE HEAD TO THE LINUX BRANCH)
  
  WARNING, THIS PROGRAM IS WINDOWS ONLY AND IS NOT COMPATIBLE WITH AMD GPUs.
  The accessiblity for other OS's and GPU types will be expanded in the future, sorry for the inconvenience. 0_0
