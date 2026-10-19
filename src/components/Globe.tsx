@@ -26,7 +26,6 @@ function decodeTopology(topo: {
 }
 
 interface GlobeProps {
-  isDark: boolean;
   lat: number | null;
   lon: number | null;
   size?: number;
@@ -35,10 +34,10 @@ interface GlobeProps {
 /**
  * Spinning orthographic globe with a real coastline world map (fetched once at
  * runtime) plus a graticule. No fill, so you see through to the back (drawn
- * fainter). Line color follows the theme. If the map can't be fetched (offline),
- * it gracefully shows just the graticule.
+ * fainter). Lines use the ink colour, the location pin the signal red. If the
+ * map can't be fetched (offline), it shows just the graticule.
  */
-export function Globe({ isDark, lat, lon, size = 360 }: GlobeProps) {
+export function Globe({ lat, lon, size = 360 }: GlobeProps) {
   const [rot, setRot] = useState(0);
   const [landRings, setLandRings] = useState<Ring[]>([]);
 
@@ -68,8 +67,9 @@ export function Globe({ isDark, lat, lon, size = 360 }: GlobeProps) {
     };
   }, []);
 
-  // Spin.
+  // Spin, unless the OS asks for reduced motion.
   useEffect(() => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     let raf = 0;
     let last = performance.now();
     const loop = (now: number) => {
@@ -86,8 +86,8 @@ export function Globe({ isDark, lat, lon, size = 360 }: GlobeProps) {
   const cx = size / 2;
   const cy = size / 2;
   const tilt = (51 * Math.PI) / 180; // elevated, looking down on the North Pole
-  const line = isDark ? '#faf9f5' : '#141413';
-  const markerColor = '#3b82f6'; // location dot: blue regardless of theme
+  const line = 'var(--ink)';
+  const markerColor = 'var(--signal)';
 
   const cosT = Math.cos(tilt);
   const sinT = Math.sin(tilt);
@@ -145,7 +145,13 @@ export function Globe({ isDark, lat, lon, size = 360 }: GlobeProps) {
   const marker = lat != null && lon != null ? project(lat, lon) : null;
 
   return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+    <svg
+      viewBox={`0 0 ${size} ${size}`}
+      className="block h-auto w-full max-w-full"
+      style={{ maxWidth: size }}
+      role="img"
+      aria-label={marker ? 'Globe with your location marked' : 'Globe'}
+    >
       <circle cx={cx} cy={cy} r={R} fill="none" stroke={line} strokeOpacity={0.22} strokeWidth={1} />
       <path d={gridBack} stroke={line} strokeOpacity={0.07} strokeWidth={0.6} fill="none" />
       <path d={landBack} stroke={line} strokeOpacity={0.14} strokeWidth={0.7} fill="none" />
@@ -158,7 +164,7 @@ export function Globe({ isDark, lat, lon, size = 360 }: GlobeProps) {
             <animate attributeName="stroke-opacity" from="0.6" to="0" dur="1.8s" repeatCount="indefinite" />
           </circle>
           <circle cx={marker.x} cy={marker.y} r={6} fill={markerColor} />
-          <circle cx={marker.x} cy={marker.y} r={6} fill="none" stroke="#ffffff" strokeOpacity={0.85} strokeWidth={1} />
+          <circle cx={marker.x} cy={marker.y} r={6} fill="none" stroke="var(--surface)" strokeOpacity={0.9} strokeWidth={1} />
         </g>
       )}
     </svg>

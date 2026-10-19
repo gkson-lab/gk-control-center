@@ -1,9 +1,67 @@
 @import "tailwindcss";
+@import "@fontsource-variable/archivo/wdth.css";
+@import "@fontsource-variable/martian-mono/wdth.css";
+
+/* Colour tokens live on :root so both themes are one set of variables (see
+   DESIGN.md). Light is the default; dark applies when the OS asks for it and
+   the user hasn't picked Light, or when the user picks Dark. */
+:root {
+  --paper: #f6f3f2;
+  --surface: #ffffff;
+  --sunken: #efe9e7;
+  --ink: #1d1716;
+  --muted: #6c605d;
+  --line: #e2d9d6;
+  --tick: #d6ccc8;
+  --signal: #c4242b;
+  --shadow: 0 1px 2px rgb(29 23 22 / 0.06), 0 12px 32px -12px rgb(29 23 22 / 0.18);
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #120e0d;
+    --surface: #1b1514;
+    --sunken: #0d0a09;
+    --ink: #f1e9e7;
+    --muted: #a3928e;
+    --line: #2f2523;
+    --tick: #3d302d;
+    --signal: #ff4a4f;
+    --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 16px 40px -12px rgb(0 0 0 / 0.6);
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --paper: #120e0d;
+  --surface: #1b1514;
+  --sunken: #0d0a09;
+  --ink: #f1e9e7;
+  --muted: #a3928e;
+  --line: #2f2523;
+  --tick: #3d302d;
+  --signal: #ff4a4f;
+  --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 16px 40px -12px rgb(0 0 0 / 0.6);
+  color-scheme: dark;
+}
 
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  --font-display: "Poppins", "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
-  --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", "Roboto Mono", Menlo, Consolas, monospace;
+  --color-paper: var(--paper);
+  --color-surface: var(--surface);
+  --color-sunken: var(--sunken);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-tick: var(--tick);
+  --color-signal: var(--signal);
+
+  --font-sans: "Archivo Variable", ui-sans-serif, system-ui, "Segoe UI", sans-serif;
+  --font-mono: "Martian Mono Variable", ui-monospace, Consolas, monospace;
+
+  --radius-chip: 4px;
+  --radius-control: 8px;
+  --radius-panel: 14px;
 }
 
 html,
@@ -14,11 +72,72 @@ body,
 
 body {
   margin: 0;
+  background: var(--paper);
+  color: var(--ink);
   font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.5;
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  /* Tabular figures so live-updating numbers never shift width. */
-  font-feature-settings: "tnum" 1;
-  background-color: #faf9f5;
   overflow-x: hidden;
+}
+
+/* Archivo's width axis carries the type voice: expanded headings, condensed
+   dense labels (DESIGN.md, Type). */
+.type-display {
+  font-stretch: 118%;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.1;
+}
+.type-condensed {
+  font-stretch: 88%;
+}
+.type-reading {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-stretch: 87.5%;
+}
+
+/* One visible focus style for every control (R-32). Ink on paper is 16:1. */
+:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.shadow-lifted {
+  box-shadow: var(--shadow);
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes drop-in {
+  from { opacity: 0; transform: translate(-50%, -16px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+/* Status dot: one flash per reading from the collector. */
+@keyframes beat {
+  from { opacity: 1; transform: scale(1.35); }
+  to { opacity: 0.45; transform: scale(1); }
+}
+.beat {
+  animation: beat 450ms ease-out forwards;
+}
+.view-enter {
+  animation: fade-in 150ms ease-out;
+}
+.toast-enter {
+  animation: drop-in 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
