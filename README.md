@@ -1,6 +1,6 @@
 # GK Control Center — Linux
 
-## please note, the linux version has been branched with the other pieces to be able to cooperate and not be ahead or behind other branches. 
+## please note, the linux and mac versions have been branched with main. the other linux and mac branches are deprecated.
 
 A sleek, real-time system monitor: live CPU / memory / GPU gauges, per-core
 processor bars, NVIDIA GPU telemetry, disk IOPS and throughput, network speed,
