@@ -1,5 +1,7 @@
 # GK Control Center — Linux
 
+## please note, the linux version has been branched with the other pieces to be able to cooperate and not be ahead or behind other branches. 
+
 A sleek, real-time system monitor: live CPU / memory / GPU gauges, per-core
 processor bars, NVIDIA GPU telemetry, disk IOPS and throughput, network speed,
 scheduler counters, a runtime odometer, and a spinning globe that shows where
