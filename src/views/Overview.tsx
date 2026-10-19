@@ -77,14 +77,25 @@ export function Overview({ m, cpuTrail, paused, go }: OverviewProps) {
             ) : (
               <Row name="Graphics" value="None" detail="No NVIDIA GPU found (nvidia-smi isn't available)" onOpen={() => go('hardware', 'graphics')} />
             )}
-            <Row
-              name="Disk"
-              value={`${Math.round(m.disk_io.busy_percent)}%`}
-              detail={`Active · read ${m.disk_io.read_mb_per_sec.toFixed(1)} MB/s, write ${m.disk_io.write_mb_per_sec.toFixed(1)} MB/s`}
-              pct={m.disk_io.busy_percent}
-              hot={m.disk_io.busy_percent >= HOT_LOAD}
-              onOpen={() => go('hardware', 'storage')}
-            />
+            {m.disk_io.busy_available ? (
+              <Row
+                name="Disk"
+                value={`${Math.round(m.disk_io.busy_percent)}%`}
+                detail={`Active · read ${m.disk_io.read_mb_per_sec.toFixed(1)} MB/s, write ${m.disk_io.write_mb_per_sec.toFixed(1)} MB/s`}
+                pct={m.disk_io.busy_percent}
+                hot={m.disk_io.busy_percent >= HOT_LOAD}
+                onOpen={() => go('hardware', 'storage')}
+              />
+            ) : (
+              // macOS has no disk active time, so the row leads with throughput instead.
+              <Row
+                name="Disk"
+                value={(m.disk_io.read_mb_per_sec + m.disk_io.write_mb_per_sec).toFixed(1)}
+                unit="MB/s"
+                detail={`read ${m.disk_io.read_mb_per_sec.toFixed(1)} MB/s, write ${m.disk_io.write_mb_per_sec.toFixed(1)} MB/s`}
+                onOpen={() => go('hardware', 'storage')}
+              />
+            )}
             <Row
               name="Network"
               value={formatRate(m.net_down_mbps)}

@@ -25,6 +25,8 @@ export interface DiskIo {
   read_mb_per_sec: number;
   write_mb_per_sec: number;
   busy_percent: number;
+  /** False on macOS, which doesn't report disk active time. */
+  busy_available: boolean;
 }
 
 export interface CoreInfo {
@@ -50,6 +52,7 @@ export interface LiveMetrics {
   processes: number;
   threads: number;
   context_switches_per_sec: number;
+  context_switches_available: boolean;
   system_calls_per_sec: number;
   system_calls_available: boolean;
   uptime_seconds: number;

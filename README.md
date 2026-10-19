@@ -18,6 +18,7 @@ The screenshots come from the browser preview, which runs on simulated readings 
 | --- | --- | --- |
 | Windows 10 / 11 | [README-windows.md](README-windows.md) | double-click `start.bat` |
 | Linux (Ubuntu, Fedora, Arch, openSUSE, WSL) | [README-linux.md](README-linux.md) | `./start.sh` |
+| macOS 11 or newer (Apple Silicon and Intel) | [README-macos.md](README-macos.md) | double-click `start-mac.command` |
 
 Each guide covers prerequisites, what each reading is based on, and troubleshooting for that system.
 
@@ -31,6 +32,10 @@ Each guide covers prerequisites, what each reading is based on, and troubleshoot
 - **Keyboard:** 1 to 3 switch views, T cycles the theme, F opens the facts drawer, ? lists every shortcut.
 
 There are hidden achievements. No hints here.
+
+## Expansion pack: macOS
+
+This branch adds the macOS version: `src-tauri/src/macos.rs` (processes, threads and disk throughput from `top`; router, DNS and Wi-Fi from the system tools), a double-click launcher (`start-mac.command`) and [README-macos.md](README-macos.md). Readings macOS doesn't expose to normal apps (disk active time, context switches, system calls, CPU temperature) show N/A instead of a misleading zero, on every system that lacks them.
 
 ## How it works
 

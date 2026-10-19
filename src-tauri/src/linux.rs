@@ -179,7 +179,7 @@ pub(crate) fn poller_loop(shared: Arc<Mutex<PsStats>>) {
                 let busy = d(cur.io_ticks_ms, old.io_ticks_ms) / (secs * 1000.0) * 100.0;
                 max_busy = max_busy.max(busy);
             }
-            stats.busy = max_busy.min(100.0);
+            stats.busy = Some(max_busy.min(100.0));
         }
         prev_disks = Some(disks);
 
@@ -187,7 +187,7 @@ pub(crate) fn poller_loop(shared: Arc<Mutex<PsStats>>) {
         // `syscalls` stays None and the UI shows N/A.
         let ctxt = fs::read_to_string("/proc/stat").ok().and_then(|s| parse_ctxt(&s));
         if let (Some(cur), Some(old)) = (ctxt, prev_ctxt) {
-            stats.ctx = cur.saturating_sub(old) as f64 / secs;
+            stats.ctx = Some(cur.saturating_sub(old) as f64 / secs);
         }
         prev_ctxt = ctxt;
         stats.processes = count_processes();

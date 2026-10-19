@@ -108,6 +108,7 @@ function createSimulator(): () => LiveMetrics {
       processes: 312,
       threads: 4120,
       context_switches_per_sec: Math.round(40000 + cpu * 900),
+      context_switches_available: true,
       system_calls_per_sec: Math.round(180000 + cpu * 4000),
       system_calls_available: true,
       uptime_seconds: secs,
@@ -122,6 +123,7 @@ function createSimulator(): () => LiveMetrics {
         read_mb_per_sec: busy * 0.8,
         write_mb_per_sec: busy * 0.3,
         busy_percent: busy,
+        busy_available: true,
       },
       gpu: {
         available: true,

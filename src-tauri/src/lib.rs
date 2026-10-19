@@ -15,6 +15,8 @@ use std::process::Command;
 
 #[cfg(target_os = "linux")]
 mod linux;
+#[cfg(target_os = "macos")]
+mod macos;
 #[cfg(windows)]
 const CREATE_NO_WINDOW: u32 = 0x0800_0000;
 
@@ -91,6 +93,8 @@ struct DiskIo {
     read_mb_per_sec: f64,
     write_mb_per_sec: f64,
     busy_percent: f64,
+    /// macOS doesn't report disk active time; the UI shows N/A then.
+    busy_available: bool,
 }
 
 #[derive(Serialize, Clone)]
@@ -119,6 +123,7 @@ struct LiveMetrics {
     processes: u32,
     threads: u32,
     context_switches_per_sec: u64,
+    context_switches_available: bool,
     system_calls_per_sec: u64,
     system_calls_available: bool,
     uptime_seconds: f64,
@@ -153,10 +158,10 @@ struct PsStats {
     writes: f64,
     read_bytes: f64,
     write_bytes: f64,
-    busy: f64,
+    busy: Option<f64>,
     processes: u32,
     threads: u32,
-    ctx: f64,
+    ctx: Option<f64>,
     syscalls: Option<f64>,
     cpu_temp: Option<f64>,
     gpu: Option<PsGpu>,
@@ -243,7 +248,13 @@ fn get_network_info() -> serde_json::Value {
     linux::network_info()
 }
 
-#[cfg(not(any(windows, target_os = "linux")))]
+#[cfg(target_os = "macos")]
+#[tauri::command]
+fn get_network_info() -> serde_json::Value {
+    macos::network_info()
+}
+
+#[cfg(not(any(windows, target_os = "linux", target_os = "macos")))]
 #[tauri::command]
 fn get_network_info() -> serde_json::Value {
     serde_json::Value::Null
@@ -251,9 +262,11 @@ fn get_network_info() -> serde_json::Value {
 
 #[cfg(target_os = "linux")]
 use linux::poller_loop;
+#[cfg(target_os = "macos")]
+use macos::poller_loop;
 
 // No extra data sources on other platforms yet; the sysinfo gauges still work.
-#[cfg(not(any(windows, target_os = "linux")))]
+#[cfg(not(any(windows, target_os = "linux", target_os = "macos")))]
 fn poller_loop(_shared: Arc<Mutex<PsStats>>) {}
 
 #[cfg(windows)]
@@ -351,7 +364,8 @@ fn collector_loop(handle: AppHandle, odometer_path: PathBuf, odometer_base: f64,
             writes_per_sec: extra.writes,
             read_mb_per_sec: extra.read_bytes / 1_000_000.0,
             write_mb_per_sec: extra.write_bytes / 1_000_000.0,
-            busy_percent: extra.busy.min(100.0),
+            busy_percent: extra.busy.unwrap_or(0.0).min(100.0),
+            busy_available: extra.busy.is_some(),
         };
 
         let mut disk_list = Vec::new();
@@ -387,7 +401,8 @@ fn collector_loop(handle: AppHandle, odometer_path: PathBuf, odometer_base: f64,
             net_up_mbps: (net_up_mbps * 100.0).round() / 100.0,
             processes: extra.processes,
             threads: extra.threads,
-            context_switches_per_sec: extra.ctx as u64,
+            context_switches_per_sec: extra.ctx.unwrap_or(0.0) as u64,
+            context_switches_available: extra.ctx.is_some(),
             system_calls_per_sec: extra.syscalls.unwrap_or(0.0) as u64,
             system_calls_available: extra.syscalls.is_some(),
             uptime_seconds: start_time.elapsed().as_secs_f64(),

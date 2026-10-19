@@ -89,7 +89,11 @@ export function Hardware({ m }: { m: LiveMetrics }) {
           <dl className="m-0 mt-5">
             <Stat label="Read" value={`${m.disk_io.read_mb_per_sec.toFixed(1)} MB/s · ${int(m.disk_io.reads_per_sec)} ops/s`} />
             <Stat label="Write" value={`${m.disk_io.write_mb_per_sec.toFixed(1)} MB/s · ${int(m.disk_io.writes_per_sec)} ops/s`} />
-            <Stat label="Active time" value={`${Math.round(m.disk_io.busy_percent)}%`} hot={m.disk_io.busy_percent >= HOT_LOAD} />
+            <Stat
+              label="Active time"
+              value={m.disk_io.busy_available ? `${Math.round(m.disk_io.busy_percent)}%` : 'N/A on this system'}
+              hot={m.disk_io.busy_available && m.disk_io.busy_percent >= HOT_LOAD}
+            />
           </dl>
         </Panel>
 
@@ -97,7 +101,7 @@ export function Hardware({ m }: { m: LiveMetrics }) {
           <dl className="m-0">
             <Stat label="Processes" value={int(m.processes)} />
             <Stat label="Threads" value={int(m.threads)} />
-            <Stat label="Context switches / s" value={int(m.context_switches_per_sec)} />
+            <Stat label="Context switches / s" value={m.context_switches_available ? int(m.context_switches_per_sec) : 'N/A on this system'} />
             <Stat label="System calls / s" value={m.system_calls_available ? int(m.system_calls_per_sec) : 'N/A on this system'} />
           </dl>
           {m.os_version && <p className="type-condensed m-0 mt-4 text-sm text-muted">{m.os_version}</p>}

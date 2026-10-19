@@ -1,0 +1,34 @@
+# Compiles the app on a real Mac and runs the backend tests (including the
+# macOS data parsers), since the macOS port was written on Windows.
+
+name: macOS check
+
+on:
+  push:
+    branches: ['expansion-pack/macos']
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+      - run: npm ci
+      - run: npx tsc -p tsconfig.app.json
+      - run: npx vite build
+      - run: cargo test --lib
+        working-directory: src-tauri
+      - name: Try the macOS data sources on this machine
+        run: |
+          top -l 1 -n 0 -s 0 | head -12
+          route -n get default || true
+          scutil --dns | grep nameserver | head -3 || true
