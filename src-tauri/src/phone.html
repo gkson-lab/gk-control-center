@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>gklabs Device Manager</title>
+<style>
+/* Same paper, ink and signal red as the desktop app (DESIGN.md). System fonts,
+   because this page is served from your PC with nothing else to load. */
+:root { --paper:#f6f3f2; --surface:#fff; --ink:#1d1716; --muted:#6c605d; --line:#e2d9d6; --tick:#d6ccc8; --signal:#c4242b; color-scheme:light; }
+@media (prefers-color-scheme: dark) { :root { --paper:#120e0d; --surface:#1b1514; --ink:#f1e9e7; --muted:#a3928e; --line:#2f2523; --tick:#3d302d; --signal:#ff4a4f; color-scheme:dark; } }
+* { box-sizing:border-box; }
+body { margin:0; background:var(--paper); color:var(--ink); font:16px/1.5 system-ui, "Segoe UI", sans-serif; }
+main { max-width:32rem; margin:0 auto; padding:20px 16px 32px; }
+h1 { font-size:1.35rem; margin:0; font-stretch:115%; letter-spacing:-0.01em; }
+.sub { color:var(--muted); font-size:.9rem; margin:2px 0 18px; }
+.card { background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:16px; margin-bottom:12px; }
+.row { display:grid; grid-template-columns:1fr auto; gap:6px 12px; align-items:baseline; padding:10px 0; border-bottom:1px solid var(--line); }
+.row:last-child { border-bottom:0; }
+.name { font-weight:600; }
+.val { font:600 1.15rem ui-monospace, Consolas, monospace; font-variant-numeric:tabular-nums; }
+.hot { color:var(--signal); }
+.detail { grid-column:1 / -1; color:var(--muted); font-size:.85rem; }
+.scale { grid-column:1 / -1; display:flex; gap:3px; height:8px; }
+.scale span { flex:1; border-radius:2px; background:var(--tick); }
+.status { display:flex; align-items:center; gap:8px; color:var(--muted); font-size:.9rem; }
+.dot { width:8px; height:8px; border-radius:50%; background:var(--muted); }
+.dot.live { background:var(--signal); }
+form { display:grid; gap:10px; }
+input { min-height:44px; border:1px solid var(--line); border-radius:8px; padding:0 12px; font:inherit; background:var(--paper); color:var(--ink); }
+button { min-height:44px; border:1px solid var(--ink); border-radius:8px; background:var(--ink); color:var(--paper); font:600 1rem system-ui, sans-serif; }
+:focus-visible { outline:2px solid var(--ink); outline-offset:2px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>gklabs Device Manager</h1>
+  <p class="sub" id="host">Connecting…</p>
+  <div class="card" id="pair" hidden>
+    <form id="pair-form">
+      <label for="token">This page needs the token shown on the PC's Machines tab.</label>
+      <input id="token" autocomplete="off" inputmode="text" placeholder="24-character token" required>
+      <button type="submit">Show this PC</button>
+    </form>
+  </div>
+  <div class="card" id="readings" hidden></div>
+  <p class="status" role="status"><span class="dot" id="dot"></span><span id="state">Waiting for the first reading…</span></p>
+</main>
+<script>
+const $ = (id) => document.getElementById(id);
+let token = new URLSearchParams(location.hash.slice(1)).get('token') || '';
+const HOT = 90, HOT_T = 85;
+
+function scale(v) {
+  let s = '<div class="scale" aria-hidden="true">';
+  for (let i = 0; i < 20; i++) {
+    const lit = v > i * 5 + 1.25, hot = i * 5 + 5 > HOT;
+    s += `<span style="background:${lit ? (hot ? 'var(--signal)' : 'var(--ink)') : 'var(--tick)'}"></span>`;
+  }
+  return s + '</div>';
+}
+function row(name, value, detail, pct, hot) {
+  return `<div class="row"><span class="name">${name}</span><span class="val${hot ? ' hot' : ''}">${value}</span>` +
+    (detail ? `<span class="detail">${detail}</span>` : '') + (pct != null ? scale(pct) : '') + '</div>';
+}
+function esc(s) { return String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+
+function render(m) {
+  $('host').textContent = [m.host_name, m.os_version].filter(Boolean).join(' · ');
+  const g = m.gpu, disk = m.disk_io;
+  let html = row('Processor', Math.round(m.cpu_usage) + '%', m.cpu_temp_available ? Math.round(m.cpu_temp_c) + ' °C' : '', m.cpu_usage, m.cpu_usage >= HOT);
+  html += row('Memory', Math.round(m.memory_usage_percent) + '%', `${m.used_memory_gb.toFixed(1)} of ${m.total_memory_gb.toFixed(1)} GB`, m.memory_usage_percent, m.memory_usage_percent >= HOT);
+  if (g.available) html += row('Graphics', Math.round(g.usage) + '%', `${Math.round(g.temp_c)} °C · ${esc(g.name)}`, g.usage, g.usage >= HOT || g.temp_c >= HOT_T);
+  html += row('Disk', Math.round(disk.busy_percent) + '%', `read ${disk.read_mb_per_sec.toFixed(1)} MB/s, write ${disk.write_mb_per_sec.toFixed(1)} MB/s`, disk.busy_percent, disk.busy_percent >= HOT);
+  html += row('Network', m.net_down_mbps.toFixed(2) + ' MB/s', `down · ${m.net_up_mbps.toFixed(2)} MB/s up`, null, false);
+  $('readings').innerHTML = html;
+  $('readings').hidden = false;
+}
+
+async function poll() {
+  if (!token) { $('pair').hidden = false; $('state').textContent = 'Enter the token to continue.'; return; }
+  try {
+    const r = await fetch('/api/metrics?token=' + encodeURIComponent(token), { cache: 'no-store' });
+    if (r.status === 401) { $('pair').hidden = false; $('dot').className = 'dot'; $('state').textContent = "That token doesn't match. It may have been changed on the PC."; return; }
+    const m = await r.json();
+    if (m) { render(m); $('pair').hidden = true; $('dot').className = 'dot live'; $('state').textContent = 'Live · updates every 2 seconds'; }
+  } catch {
+    $('dot').className = 'dot'; $('state').textContent = "Can't reach the PC. Is it on, with sharing turned on, and on the same network?";
+  }
+  setTimeout(poll, 2000);
+}
+$('pair-form').addEventListener('submit', (e) => {
+  e.preventDefault();
+  token = $('token').value.trim();
+  history.replaceState(null, '', '#token=' + encodeURIComponent(token));
+  poll();
+});
+poll();
+</script>
+</body>
+</html>

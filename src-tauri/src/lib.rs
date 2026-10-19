@@ -399,9 +399,33 @@ fn collector_loop(handle: AppHandle, odometer_path: PathBuf, odometer_base: f64,
             os_version: os_version.clone(),
         };
 
+        // Multi-PC pack: keep the latest readings ready for the sharing server.
+        if let Some(sh) = handle.try_state::<share::Share>() {
+            if let (Ok(json), Ok(mut slot)) = (serde_json::to_string(&metrics), sh.latest.lock()) {
+                *slot = json;
+            }
+        }
+
         let _ = handle.emit("metrics", metrics);
         thread::sleep(Duration::from_millis(EMIT_INTERVAL_MS));
     }
+}
+
+mod share;
+
+#[tauri::command]
+fn share_status(state: tauri::State<share::Share>) -> share::Status {
+    state.status()
+}
+
+#[tauri::command]
+fn share_set(enabled: bool, state: tauri::State<share::Share>) -> share::Status {
+    state.set_enabled(enabled)
+}
+
+#[tauri::command]
+fn share_new_token(state: tauri::State<share::Share>) -> share::Status {
+    state.new_token()
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -422,6 +446,7 @@ pub fn run() {
                 .app_data_dir()
                 .unwrap_or_else(|_| PathBuf::from("."));
             let _ = std::fs::create_dir_all(&data_dir);
+            app.manage(share::Share::load(data_dir.join("multi-pc.json")));
 
             // Reset the odometer on every launch so runtime always starts from
             // zero. (We only remove our own odometer file — never the app cache
@@ -439,7 +464,7 @@ pub fn run() {
 
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![get_network_info])
+        .invoke_handler(tauri::generate_handler![get_network_info, share_status, share_set, share_new_token])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

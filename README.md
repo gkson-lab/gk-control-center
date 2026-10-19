@@ -32,6 +32,17 @@ Each guide covers prerequisites, what each reading is based on, and troubleshoot
 
 There are hidden achievements. No hints here.
 
+## Expansion pack: Multi-PC
+
+This branch adds a **Machines** tab (key 4) for watching every PC in the house from one screen, or from your phone.
+
+1. On each PC you want to watch, open **Machines** and turn on **Let devices on my network see this PC's readings**. Windows may ask once to let the app through its firewall; allow it on private networks.
+2. Copy the link it shows (`http://<address>:47823/#token=...`).
+3. **On a phone:** open the link in the browser for a live, phone-sized page.
+4. **On another PC:** paste the link into **Add a machine**. Each machine gets its own live card, next to This PC.
+
+Sharing is off until you turn it on. The server only answers requests that carry the PC's private token, and **New token** makes every old link stop working. Machines you add are remembered on that PC only.
+
 ## How it works
 
 A Rust thread collects readings twice a second and pushes them to the window as an event; the interface only listens. Per-platform data sources live in `src-tauri/src/lib.rs` (Windows) and `src-tauri/src/linux.rs` (Linux). The interface is in `src/`, and the design decisions behind it, with a reason for each, are in [DESIGN.md](DESIGN.md).
