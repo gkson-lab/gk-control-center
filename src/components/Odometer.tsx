@@ -110,7 +110,7 @@ export function Odometer({ seconds, frozen = false }: OdometerProps) {
       role="timer"
       tabIndex={0}
       aria-label={`Session runtime, ${Math.floor(value)} seconds`}
-      className="inline-flex cursor-default touch-none select-none items-end gap-1.5 rounded-control"
+      className="inline-flex cursor-default touch-none select-none items-end gap-1 rounded-control sm:gap-1.5"
       onPointerDown={startHold}
       onPointerUp={cancelHold}
       onPointerLeave={cancelHold}
@@ -142,7 +142,7 @@ function Drum({ digit, size, pressed, rolled }: { digit: string; size: 'lg' | 's
   return (
     <span
       className={`type-reading relative flex items-center justify-center overflow-hidden rounded-chip border bg-sunken transition-transform duration-200 ${
-        lg ? 'h-16 w-11 text-[2rem]' : 'h-12 w-8 text-xl text-muted'
+        lg ? 'h-11 w-7 text-xl sm:h-16 sm:w-11 sm:text-[2rem]' : 'h-9 w-5 text-sm text-muted sm:h-12 sm:w-8 sm:text-xl'
       } ${pressed ? 'scale-[0.96]' : ''}`}
       style={{ borderColor: rolled ? 'var(--signal)' : 'var(--line)', color: rolled ? 'var(--signal)' : undefined }}
     >
