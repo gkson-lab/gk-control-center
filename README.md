@@ -18,6 +18,7 @@ The screenshots come from the browser preview, which runs on simulated readings 
 | --- | --- | --- |
 | Windows 10 / 11 | [README-windows.md](README-windows.md) | double-click `start.bat` |
 | Linux (Ubuntu, Fedora, Arch, openSUSE, WSL) | [README-linux.md](README-linux.md) | `./start.sh` |
+| macOS 11 or newer | [README-macos.md](README-macos.md) | `start-mac.command` on the `expansion-pack/macos` branch |
 
 Each guide covers prerequisites, what each reading is based on, and troubleshooting for that system.
 
