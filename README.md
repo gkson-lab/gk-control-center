@@ -32,6 +32,14 @@ Each guide covers prerequisites, what each reading is based on, and troubleshoot
 
 There are hidden achievements. No hints here.
 
+## Expansion pack: Custom layout
+
+This branch adds a **Customize** button to the Overview:
+
+- Switch off any part you don't use: the processor panel, its 60-second trail, the "Right now" list, or the runtime odometer. With the processor panel hidden, the list spreads across the full width.
+- Reorder and hide the "Right now" rows (memory, graphics, disk, network) by dragging them, or with Up and Down from the keyboard.
+- **Reset to default** puts everything back. The layout is remembered on this PC.
+
 ## How it works
 
 A Rust thread collects readings twice a second and pushes them to the window as an event; the interface only listens. Per-platform data sources live in `src-tauri/src/lib.rs` (Windows) and `src-tauri/src/linux.rs` (Linux). The interface is in `src/`, and the design decisions behind it, with a reason for each, are in [DESIGN.md](DESIGN.md).
