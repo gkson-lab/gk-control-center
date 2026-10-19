@@ -24,6 +24,20 @@ const POLL_INTERVAL_MS: u64 = 1000;  // shell-out (GPU + WMI) cadence
 const WRITE_EVERY_N_TICKS: u64 = 10;
 const RELIST_EVERY_N_TICKS: u64 = 120;
 
+mod processes;
+
+/// Process explorer pack: every running process, busiest first.
+#[tauri::command]
+fn list_processes(state: tauri::State<std::sync::Mutex<processes::ProcState>>) -> Vec<processes::ProcInfo> {
+    processes::list(&state)
+}
+
+/// Process explorer pack: end one process by id.
+#[tauri::command]
+fn end_process(pid: u32, state: tauri::State<std::sync::Mutex<processes::ProcState>>) -> Result<(), String> {
+    processes::end(&state, pid)
+}
+
 // PowerShell does everything that used to need the `wmi` crate, plus nvidia-smi,
 // in one process spawn per second, returning a single JSON object. This avoids
 // pulling a second `windows-core` version into the dependency graph (the cause
@@ -439,7 +453,8 @@ pub fn run() {
 
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![get_network_info])
+        .manage(processes::ProcState::new())
+        .invoke_handler(tauri::generate_handler![get_network_info, list_processes, end_process])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

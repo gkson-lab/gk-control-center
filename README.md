@@ -32,6 +32,14 @@ Each guide covers prerequisites, what each reading is based on, and troubleshoot
 
 There are hidden achievements. No hints here.
 
+## Expansion pack: Process explorer
+
+This branch adds a **Processes** tab (key 4): every running process with its share of the processor, memory and disk throughput, refreshed every 2 seconds (and frozen while readings are paused).
+
+- **Find** filters by name or process ID; click a column heading to sort, again to reverse.
+- Click a row (or Tab to it and press Enter) for its details and file location.
+- **End task** asks first, then reports whether it worked. The system processes and the app itself are protected, and processes owned by another user need the app to run as administrator.
+
 ## How it works
 
 A Rust thread collects readings twice a second and pushes them to the window as an event; the interface only listens. Per-platform data sources live in `src-tauri/src/lib.rs` (Windows) and `src-tauri/src/linux.rs` (Linux). The interface is in `src/`, and the design decisions behind it, with a reason for each, are in [DESIGN.md](DESIGN.md).
