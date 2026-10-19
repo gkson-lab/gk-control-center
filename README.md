@@ -32,6 +32,14 @@ Each guide covers prerequisites, what each reading is based on, and troubleshoot
 
 There are hidden achievements. No hints here.
 
+## Expansion pack: History
+
+This branch adds a **History** tab (key 4). The backend saves a reading every 2 seconds for the last 24 hours, and one-minute averages for the last 7 days in `history.jsonl` in the app's data folder.
+
+- Pick a range (5 minutes to 7 days) and a reading (processor, memory, graphics, temperatures, disk, download).
+- Move across the chart with the mouse, or focus it and use the arrow keys (Shift for bigger steps, Home and End for the ends), to read any moment and the busiest process at that time.
+- **Busiest moments** lists the five highest peaks in the range with what was running; click one to jump the chart to it.
+
 ## How it works
 
 A Rust thread collects readings twice a second and pushes them to the window as an event; the interface only listens. Per-platform data sources live in `src-tauri/src/lib.rs` (Windows) and `src-tauri/src/linux.rs` (Linux). The interface is in `src/`, and the design decisions behind it, with a reason for each, are in [DESIGN.md](DESIGN.md).

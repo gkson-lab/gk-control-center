@@ -23,6 +23,10 @@ const EMIT_INTERVAL_MS: u64 = 500;   // hardware gauges (sysinfo) cadence
 const POLL_INTERVAL_MS: u64 = 1000;  // shell-out (GPU + WMI) cadence
 const WRITE_EVERY_N_TICKS: u64 = 10;
 const RELIST_EVERY_N_TICKS: u64 = 120;
+const HISTORY_EVERY_N_TICKS: u64 = 4; // 2 s
+const TOP_PROCESS_EVERY_N_TICKS: u64 = 10; // 5 s
+
+mod history;
 
 // PowerShell does everything that used to need the `wmi` crate, plus nvidia-smi,
 // in one process spawn per second, returning a single JSON object. This avoids
@@ -273,8 +277,15 @@ fn poller_loop(shared: Arc<Mutex<PsStats>>) {
 
 // ---------- Collector ----------
 
-fn collector_loop(handle: AppHandle, odometer_path: PathBuf, odometer_base: f64, shared: Arc<Mutex<PsStats>>) {
+fn collector_loop(
+    handle: AppHandle,
+    odometer_path: PathBuf,
+    odometer_base: f64,
+    shared: Arc<Mutex<PsStats>>,
+    hist: HistoryState,
+) {
     let start_time = Instant::now();
+    let mut top_process = String::new();
 
     let mut sys = System::new_all();
     sys.refresh_all();
@@ -399,9 +410,46 @@ fn collector_loop(handle: AppHandle, odometer_path: PathBuf, odometer_base: f64,
             os_version: os_version.clone(),
         };
 
+        // History pack: a sample every 2 s; the busiest process every 5 s.
+        if tick % TOP_PROCESS_EVERY_N_TICKS == 1 {
+            sys.refresh_processes();
+            top_process = sys
+                .processes()
+                .values()
+                .filter(|p| p.pid().as_u32() != 0)
+                .max_by(|a, b| a.cpu_usage().total_cmp(&b.cpu_usage()))
+                .map(|p| p.name().to_string())
+                .unwrap_or_default();
+        }
+        if tick % HISTORY_EVERY_N_TICKS == 0 {
+            let sample = history::Sample {
+                t: history::now_secs(),
+                cpu: metrics.cpu_usage,
+                mem: metrics.memory_usage_percent as f32,
+                gpu: metrics.gpu.usage,
+                gpu_temp: metrics.gpu.temp_c,
+                cpu_temp: metrics.cpu_temp_c,
+                disk: metrics.disk_io.busy_percent as f32,
+                down: metrics.net_down_mbps as f32,
+                up: metrics.net_up_mbps as f32,
+                top: top_process.clone(),
+            };
+            if let Ok(mut h) = hist.lock() {
+                h.push(sample);
+            }
+        }
+
         let _ = handle.emit("metrics", metrics);
         thread::sleep(Duration::from_millis(EMIT_INTERVAL_MS));
     }
+}
+
+type HistoryState = Arc<Mutex<history::History>>;
+
+/// Samples for the History view: the last `range_secs`, at most 480 points.
+#[tauri::command]
+fn get_history(range_secs: u64, state: tauri::State<HistoryState>) -> Vec<history::Sample> {
+    state.lock().map(|h| h.query(range_secs)).unwrap_or_default()
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -434,12 +482,15 @@ pub fn run() {
             let shared_poll = shared.clone();
             thread::spawn(move || poller_loop(shared_poll));
 
+            let hist: HistoryState = Arc::new(Mutex::new(history::History::load(data_dir.join("history.jsonl"))));
+            app.manage(hist.clone());
+
             let handle = app.handle().clone();
-            thread::spawn(move || collector_loop(handle, odometer_path, odometer_base, shared));
+            thread::spawn(move || collector_loop(handle, odometer_path, odometer_base, shared, hist));
 
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![get_network_info])
+        .invoke_handler(tauri::generate_handler![get_network_info, get_history])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

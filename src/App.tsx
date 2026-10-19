@@ -11,6 +11,7 @@ import { AchievementToast } from './components/AchievementToast';
 import { Overview } from './views/Overview';
 import { Hardware } from './views/Hardware';
 import { Network } from './views/Network';
+import { HistoryView } from './views/History';
 
 interface ViewContext {
   m: LiveMetrics;
@@ -28,6 +29,7 @@ const VIEWS: ViewDef[] = [
   { id: 'overview', label: 'Overview', render: (c) => <Overview m={c.m} cpuTrail={c.cpuTrail} paused={c.paused} go={c.go} /> },
   { id: 'hardware', label: 'Hardware', render: (c) => <Hardware m={c.m} /> },
   { id: 'network', label: 'Network', render: (c) => <Network m={c.m} /> },
+  { id: 'history', label: 'History', render: () => <HistoryView /> },
 ];
 
 const THEME_ORDER: ThemeChoice[] = ['system', 'light', 'dark'];
