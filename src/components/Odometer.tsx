@@ -94,6 +94,14 @@ export function Odometer({ seconds, frozen = false }: OdometerProps) {
 
   const value = phase === 'racing' ? race : phase === 'rolled' ? 0 : Math.max(0, live);
   const [intPart, fracPart] = Math.min(value, 999999.999).toFixed(3).split('.');
+
+  // Pausing within a hundredth of a whole second (.000 to .009) earns "Dead on".
+  // Every second shows at least one such frame, so it's about 1 try in 100.
+  const wasFrozen = useRef(frozen);
+  useEffect(() => {
+    if (frozen && !wasFrozen.current && phase === 'live' && fracPart.startsWith('00') && value > 0) unlock('dead-on');
+    wasFrozen.current = frozen;
+  }, [frozen, phase, fracPart, value, unlock]);
   const intDigits = intPart.padStart(6, '0').split('');
   const fracDigits = fracPart.split('');
 

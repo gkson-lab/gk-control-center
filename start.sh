@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ---------------------------------------------------------------------------
-#  One-click launcher for GK Control Center on Linux (the start.bat equivalent).
+#  One-click launcher for gklabs Device Manager on Linux (the start.bat equivalent).
 #  Run it with:  bash start.sh   (or chmod +x start.sh once, then ./start.sh)
 #  On first run it offers to install everything that's missing — Tauri's
 #  system libraries, Node.js and Rust — then installs the JS dependencies and
@@ -58,7 +58,7 @@ if [ $need_libs = 1 ] || [ $need_node = 1 ]; then
   [ $need_libs = 1 ] && pkgs="$libs"
   [ $need_node = 1 ] && pkgs="$pkgs nodejs npm"
   install_cmd="$pre $pkgs"
-  echo "Some things GK Control Center needs aren't installed yet:"
+  echo "Some things gklabs Device Manager needs aren't installed yet:"
   [ $need_libs = 1 ] && echo "  - Tauri system libraries (WebKitGTK and build tools)"
   [ $need_node = 1 ] && echo "  - Node.js and npm"
   echo "Command: $install_cmd"
@@ -88,5 +88,5 @@ if [ ! -d node_modules ] || ! ls -d node_modules/@tauri-apps/cli-linux-* >/dev/n
   npm install || fail "npm install failed."
 fi
 
-echo "Starting GK Control Center... (keep this terminal open while the app runs)"
+echo "Starting gklabs Device Manager... (keep this terminal open while the app runs)"
 npm run tauri dev || fail "The app exited with an error."

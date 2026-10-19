@@ -22,7 +22,7 @@ export function AchievementToast() {
   );
 }
 
-/** Trophy cup drawn for GKCC: the achievement mark used in the toast and drawer. */
+/** Trophy cup drawn for the app: the achievement mark used in the toast and drawer. */
 export function TrophyMark({ muted = false }: { muted?: boolean }) {
   return (
     <span

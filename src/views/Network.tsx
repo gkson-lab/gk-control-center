@@ -66,7 +66,7 @@ export function Network({ m }: { m: LiveMetrics }) {
 
         <Panel title="Wi-Fi and router">
           {!inDesktopApp ? (
-            <Empty title="Desktop app only" body="Wi-Fi and router details come from the GK Control Center backend, so the browser preview can't show them." />
+            <Empty title="Desktop app only" body="Wi-Fi and router details come from the gklabs Device Manager backend, so the browser preview can't show them." />
           ) : netState === 'loading' ? (
             <Waiting text="Reading adapter details…" />
           ) : netState === 'error' || !net ? (

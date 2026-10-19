@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useAchievements } from '../lib/achievements';
 
 type Ring = [number, number][];
 
@@ -39,6 +40,8 @@ interface GlobeProps {
  */
 export function Globe({ lat, lon, size = 360 }: GlobeProps) {
   const [rot, setRot] = useState(0);
+  const { unlock } = useAchievements();
+  const taps = useRef(0);
   const [landRings, setLandRings] = useState<Ring[]>([]);
 
   // Fetch the world coastline once.
@@ -144,12 +147,23 @@ export function Globe({ lat, lon, size = 360 }: GlobeProps) {
 
   const marker = lat != null && lon != null ? project(lat, lon) : null;
 
+  // Three taps on the pin while it faces you earns "Pinpoint" (very hard).
+  // Taps while it's round the back reset the count.
+  const tapPin = () => {
+    if (!marker?.visible) {
+      taps.current = 0;
+      return;
+    }
+    taps.current += 1;
+    if (taps.current >= 3) unlock('pinpoint');
+  };
+
   return (
     <svg
       viewBox={`0 0 ${size} ${size}`}
       className="block h-auto w-full max-w-full"
       style={{ maxWidth: size }}
-      role="img"
+      role="group"
       aria-label={marker ? 'Globe with your location marked' : 'Globe'}
     >
       <circle cx={cx} cy={cy} r={R} fill="none" stroke={line} strokeOpacity={0.22} strokeWidth={1} />
@@ -158,7 +172,21 @@ export function Globe({ lat, lon, size = 360 }: GlobeProps) {
       <path d={gridFront} stroke={line} strokeOpacity={0.22} strokeWidth={0.6} fill="none" />
       <path d={landFront} stroke={line} strokeOpacity={0.7} strokeWidth={0.9} fill="none" />
       {marker && (
-        <g opacity={marker.visible ? 1 : 0.3}>
+        <g
+          opacity={marker.visible ? 1 : 0.3}
+          role="button"
+          tabIndex={0}
+          aria-label="Your location"
+          className="cursor-pointer"
+          onClick={tapPin}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              tapPin();
+            }
+          }}
+        >
+          <circle cx={marker.x} cy={marker.y} r={16} fill="transparent" />
           <circle cx={marker.x} cy={marker.y} r={10} fill="none" stroke={markerColor} strokeOpacity={0.5}>
             <animate attributeName="r" from="5" to="15" dur="1.8s" repeatCount="indefinite" />
             <animate attributeName="stroke-opacity" from="0.6" to="0" dur="1.8s" repeatCount="indefinite" />

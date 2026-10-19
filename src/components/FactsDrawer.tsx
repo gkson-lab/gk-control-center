@@ -21,7 +21,7 @@ export function FactsDrawer({ open, onClose, m, diskOpsTotal }: FactsDrawerProps
     <Dialog open={open} onClose={onClose} title="Fun facts" placement="left">
       <div className="grid gap-5">
         <Fact label="Bytes stored on your drives" value={bytesStored.toLocaleString()} />
-        <Fact label="Disk operations since GKCC opened" value={int(diskOpsTotal)} />
+        <Fact label="Disk operations since the app opened" value={int(diskOpsTotal)} />
         <Fact label="Hours of runtime this session" value={(m.odometer_total / 3600).toFixed(2)} />
         <div className="grid grid-cols-2 gap-4 border-t border-line pt-5">
           <Fact label="Logical processors" value={String(m.logical_cores)} small />
@@ -42,9 +42,12 @@ export function FactsDrawer({ open, onClose, m, diskOpsTotal }: FactsDrawerProps
             return (
               <li key={a.id} className="flex items-center gap-3">
                 <TrophyMark muted={!got} />
-                <span>
-                  <span className="block text-[15px] font-semibold">{got || !a.hidden ? a.title : 'Hidden achievement'}</span>
-                  <span className="type-condensed block text-sm text-muted">{got ? a.description : 'Somewhere in GK Control Center.'}</span>
+                <span className="min-w-0 flex-1">
+                  <span className="flex items-baseline justify-between gap-2">
+                    <span className="text-[15px] font-semibold">{got || !a.hidden ? a.title : 'Hidden achievement'}</span>
+                    <span className="type-condensed shrink-0 text-xs text-muted">{a.difficulty}</span>
+                  </span>
+                  <span className="type-condensed block text-sm text-muted">{got ? a.description : 'Somewhere in gklabs Device Manager.'}</span>
                 </span>
               </li>
             );

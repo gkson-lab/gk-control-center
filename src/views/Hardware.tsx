@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useAchievements } from '../lib/achievements';
 import { Chip, Panel, Stat } from '../components/Panel';
 import { Scale } from '../components/Scale';
 import { HOT_LOAD, HOT_TEMP, clamp, formatGb, int } from '../lib/format';
@@ -116,6 +117,15 @@ function CoreGrid({ cores }: { cores: CoreInfo[] }) {
   const busiest = cores.reduce((b, c, i) => (c.usage > (cores[b]?.usage ?? -1) ? i : b), 0);
   const detail = shown ?? busiest;
   const c = cores[detail];
+
+  // Reading every core in turn earns "Core inspector" (the medium achievement).
+  const { unlock } = useAchievements();
+  const inspected = useRef(new Set<number>());
+  useEffect(() => {
+    if (sel == null) return;
+    inspected.current.add(sel);
+    if (cores.length > 1 && inspected.current.size >= cores.length) unlock('core-inspector');
+  }, [sel, cores.length, unlock]);
 
   if (!cores.length) return <Empty title="No per-core data" body="The system didn't report individual processors." />;
 

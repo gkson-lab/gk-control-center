@@ -101,7 +101,7 @@ export function Overview({ m, cpuTrail, paused, go }: OverviewProps) {
           <Odometer seconds={m.odometer_total} frozen={paused} />
         </div>
         <p className="type-condensed m-0 mt-4 max-w-[52ch] text-sm text-muted">
-          Seconds since GK Control Center opened. It starts over from zero each launch.
+          Seconds since gklabs Device Manager opened. It starts over from zero each launch.
         </p>
       </Panel>
     </div>

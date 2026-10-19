@@ -7,20 +7,59 @@ export interface Achievement {
   description: string;
   /** Hidden achievements show only as "Hidden achievement" until found. */
   hidden: boolean;
+  /** Shown on locked entries so people know what they're hunting for. */
+  difficulty: 'Easy' | 'Medium' | 'Hard' | 'Very hard';
 }
 
 export const ACHIEVEMENTS: Achievement[] = [
+  {
+    id: 'freeze-frame',
+    title: 'Freeze frame',
+    description: 'Paused the readings to take a closer look.',
+    hidden: true,
+    difficulty: 'Easy',
+  },
   {
     id: 'center-controlled',
     title: 'Consider this Center Controlled',
     description: 'Found the trophy tucked into the facts drawer.',
     hidden: true,
+    difficulty: 'Easy',
+  },
+  {
+    id: 'core-inspector',
+    title: 'Core inspector',
+    description: 'Read every single core in the core grid.',
+    hidden: true,
+    difficulty: 'Medium',
   },
   {
     id: 'odometer-rollover',
     title: 'Odometer rollover',
     description: 'Held the runtime odometer until it ran out of digits and wrapped back to zero.',
     hidden: true,
+    difficulty: 'Medium',
+  },
+  {
+    id: 'old-school',
+    title: 'Old school',
+    description: 'Entered the code everyone of a certain age knows by heart.',
+    hidden: true,
+    difficulty: 'Hard',
+  },
+  {
+    id: 'pinpoint',
+    title: 'Pinpoint',
+    description: 'Tapped your own location on the spinning globe three times while it faced you.',
+    hidden: true,
+    difficulty: 'Very hard',
+  },
+  {
+    id: 'dead-on',
+    title: 'Dead on',
+    description: 'Froze the odometer within a hundredth of a second of a whole second.',
+    hidden: true,
+    difficulty: 'Very hard',
   },
 ];
 
@@ -63,12 +102,15 @@ export function AchievementsProvider({ children }: { children: ReactNode }) {
     setToast(null);
   }, []);
 
-  // Unlocking again still shows the toast: finding a secret twice should
-  // still feel like something happened.
+  // The toast shows only on the first unlock, so everyday actions that also
+  // earn an achievement (pausing) don't keep announcing it.
+  const unlockedRef = useRef(unlocked);
+  unlockedRef.current = unlocked;
   const unlock = useCallback((id: string) => {
     const a = ACHIEVEMENTS.find((x) => x.id === id);
-    if (!a) return;
-    setUnlocked((u) => (u.includes(id) ? u : [...u, id]));
+    if (!a || unlockedRef.current.includes(id)) return;
+    unlockedRef.current = [...unlockedRef.current, id];
+    setUnlocked(unlockedRef.current);
     setToast(a);
     window.clearTimeout(timer.current);
     timer.current = window.setTimeout(() => setToast(null), 5200);

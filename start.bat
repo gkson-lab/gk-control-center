@@ -1,13 +1,13 @@
 @echo off
 REM ---------------------------------------------------------------------------
-REM  One-click launcher for GK Control Center.
+REM  One-click launcher for gklabs Device Manager.
 REM  Double-click this file. It checks the prerequisites, installs the JS
 REM  dependencies on first run (or after clean.cmd), then starts the app.
 REM  The first launch compiles the Rust backend and can take a few minutes;
 REM  later launches are much faster.
 REM ---------------------------------------------------------------------------
 setlocal
-title GK Control Center
+title gklabs Device Manager
 cd /d "%~dp0"
 
 where npm >nul 2>nul
@@ -31,7 +31,7 @@ if not exist node_modules (
   )
 )
 
-echo Starting GK Control Center... ^(keep this window open while the app runs^)
+echo Starting gklabs Device Manager... ^(keep this window open while the app runs^)
 call npm run tauri dev
 if errorlevel 1 goto :fail
 exit /b 0

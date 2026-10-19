@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { useMetrics, type LinkState } from './lib/useMetrics';
 import { useTheme, type ThemeChoice } from './lib/theme';
-import { AchievementsProvider } from './lib/achievements';
+import { AchievementsProvider, useAchievements } from './lib/achievements';
 import type { LiveMetrics } from './lib/types';
 import { Tabs, type TabDef } from './components/Tabs';
 import { ThemeSwitch } from './components/ThemeSwitch';
@@ -49,6 +49,26 @@ function Shell() {
   const [factsOpen, setFactsOpen] = useState(false);
   const [keysOpen, setKeysOpen] = useState(false);
   const diskOps = useDiskOpsTotal(metrics);
+  const { unlock } = useAchievements();
+
+  useEffect(() => {
+    if (paused) unlock('freeze-frame');
+  }, [paused, unlock]);
+
+  // ↑ ↑ ↓ ↓ ← → ← → B A, typed anywhere (the hard achievement; no hint in the UI).
+  const keyTrail = useRef<string[]>([]);
+  useEffect(() => {
+    const code = ['arrowup', 'arrowup', 'arrowdown', 'arrowdown', 'arrowleft', 'arrowright', 'arrowleft', 'arrowright', 'b', 'a'];
+    const onKey = (e: KeyboardEvent) => {
+      keyTrail.current = [...keyTrail.current, e.key.toLowerCase()].slice(-code.length);
+      if (keyTrail.current.join() === code.join()) {
+        keyTrail.current = [];
+        unlock('old-school');
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [unlock]);
 
   const go = useCallback((v: string, s?: string) => {
     setView(v);
@@ -89,21 +109,21 @@ function Shell() {
     <div className="min-h-full">
       {simulated && (
         <div className="type-condensed border-b border-line bg-sunken px-4 py-2 text-center text-sm">
-          <strong>Preview with simulated readings.</strong> These numbers are not from this PC; open the GK Control Center desktop app
+          <strong>Preview with simulated readings.</strong> These numbers are not from this PC; open the gklabs Device Manager desktop app
           for real data.
         </div>
       )}
       {link === 'lost' && (
         <div role="alert" className="type-condensed border-b border-signal bg-surface px-4 py-2 text-center text-sm">
           <strong className="text-signal">Lost contact with the collector.</strong> No readings for 4 seconds. If this doesn't clear,
-          restart GK Control Center.
+          restart gklabs Device Manager.
         </div>
       )}
 
       <div className="mx-auto max-w-6xl px-4 pb-6 pt-6 sm:px-8 sm:pt-8">
         <header className="flex flex-wrap items-center justify-between gap-x-6 gap-y-4">
           <div className="min-w-0">
-            <h1 className="type-display m-0 text-[1.6rem]">GK Control Center</h1>
+            <h1 className="type-display m-0 text-[1.6rem]">gklabs Device Manager</h1>
             <p className="type-condensed m-0 mt-0.5 truncate text-sm text-muted">
               {metrics?.host_name ? `${metrics.host_name} · ` : ''}
               {metrics?.os_version || 'System monitor'}
