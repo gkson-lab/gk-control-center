@@ -25,7 +25,7 @@ Dial: ENERGY 2 / RHYTHM 2 / MOTION 2
   - **The 60-second trail** draws under the processor readout so a spike is still visible after it has passed.
   - **Tabs** cross-fade in 150 ms; the drawer slides in 220 ms; toasts drop in once.
   - **The globe spins** because the spin is how the location pin comes into view.
-  - **Reduced motion** (the OS setting) stops the globe, the transitions and the odometer roll.
+  - **Reduced motion** (the OS setting) stops the globe and the transitions.
 - **States.** Every data view has a waiting state (before the first reading), a lost-contact state (no reading for 4 seconds, with what to do), and empty states (no GPU, no Wi-Fi, no drives). The browser preview without the desktop app is labelled as simulated data on every screen.
 - **Pause.** Readings can be frozen (P key or the status button) so a number can be read or screenshotted without it changing.
 - **Hidden achievements.** Seven, from Easy to Very hard. Unlocked ones are kept on the device and listed in the facts drawer; hidden ones show only "Hidden achievement" and their difficulty until found, so people know what they are hunting for without being told where.

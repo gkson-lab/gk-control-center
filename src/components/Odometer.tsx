@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useAchievements } from '../lib/achievements';
 
-const HOLD_MS = 2000; // how long to hold before the rollover starts
-const RACE_MS = 1600; // digits race to 999999.999
+const HOLD_MS = 2000; // how long to hold before the rollover
 const SHOW_ZERO_MS = 1400; // rolled-over zeros stay up this long
 
 /**
@@ -34,7 +33,7 @@ function useLiveSeconds(serverSeconds: number | null, frozen: boolean): number {
   return display;
 }
 
-type Phase = 'live' | 'holding' | 'racing' | 'rolled';
+type Phase = 'live' | 'holding' | 'rolled';
 
 interface OdometerProps {
   seconds: number | null;
@@ -45,21 +44,18 @@ export function Odometer({ seconds, frozen = false }: OdometerProps) {
   const live = useLiveSeconds(seconds, frozen);
   const { unlock } = useAchievements();
   const [phase, setPhase] = useState<Phase>('live');
-  const [race, setRace] = useState(0);
   const timers = useRef<number[]>([]);
-  const raf = useRef(0);
 
   const clearAll = () => {
     timers.current.forEach((t) => window.clearTimeout(t));
     timers.current = [];
-    cancelAnimationFrame(raf.current);
   };
   useEffect(() => clearAll, []);
 
   const startHold = () => {
     if (phase !== 'live') return;
     setPhase('holding');
-    timers.current.push(window.setTimeout(startRace, HOLD_MS));
+    timers.current.push(window.setTimeout(rollOver, HOLD_MS));
   };
 
   const cancelHold = () => {
@@ -69,30 +65,14 @@ export function Odometer({ seconds, frozen = false }: OdometerProps) {
     }
   };
 
-  const startRace = () => {
-    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const from = live;
-    const target = 999999.999;
-    const begin = performance.now();
-    setPhase('racing');
-    const finish = () => {
-      setPhase('rolled');
-      unlock('odometer-rollover');
-      timers.current.push(window.setTimeout(() => setPhase('live'), SHOW_ZERO_MS));
-    };
-    if (reduce) return finish();
-    const tick = (now: number) => {
-      const t = Math.min(1, (now - begin) / RACE_MS);
-      // Ease-in on a log scale so every digit visibly spins up in turn.
-      const v = Math.exp(Math.log(from + 1) + (Math.log(target + 1) - Math.log(from + 1)) * t * t) - 1;
-      setRace(v);
-      if (t < 1) raf.current = requestAnimationFrame(tick);
-      else finish();
-    };
-    raf.current = requestAnimationFrame(tick);
+  // Jump straight to the rolled-over zeros; no digit race.
+  const rollOver = () => {
+    setPhase('rolled');
+    unlock('odometer-rollover');
+    timers.current.push(window.setTimeout(() => setPhase('live'), SHOW_ZERO_MS));
   };
 
-  const value = phase === 'racing' ? race : phase === 'rolled' ? 0 : Math.max(0, live);
+  const value = phase === 'rolled' ? 0 : Math.max(0, live);
   const [intPart, fracPart] = Math.min(value, 999999.999).toFixed(3).split('.');
 
   // Pausing within a hundredth of a whole second (.000 to .009) earns "Dead on".
