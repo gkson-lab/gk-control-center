@@ -1,129 +1,127 @@
-# GK Control Center
+# GK Control Center — Linux
 
-# (IF YOU WANT THE LINUX VERSION, PLEASE HEAD TO THE LINUX BRANCH)
- 
- WARNING, THIS PROGRAM IS WINDOWS ONLY AND IS NOT COMPATIBLE WITH AMD GPUs.
- The accessiblity for other OS's and GPU types will be expanded in the future, sorry for the inconvenience. 0_0
+## please note, the linux version has been branched with the other pieces to be able to cooperate and not be ahead or behind other branches. 
 
-A sleek, real-time system monitor built with **Tauri 2 + React + TypeScript**, styled in a warm-monochrome design language.
+A sleek, real-time system monitor: live CPU / memory / GPU gauges, per-core
+processor bars, NVIDIA GPU telemetry, disk IOPS and throughput, network speed,
+scheduler counters, a runtime odometer, and a spinning globe that shows where
+your connection is.
 
-It shows live hardware gauges, **per-core processor bars**, full **NVIDIA GPU**
-telemetry, **disk IOPS / throughput**, network throughput, scheduler counters,
-and a persistent runtime **odometer** that accumulates total seconds of use
-across sessions.
+Built with Tauri 2 + React. This package is the Linux edition.
 
-## Architecture
-
-The backend owns the cadence. A background thread in Rust refreshes everything
-about twice a second and **emits** a `metrics` event to the webview; the React
-frontend simply **listens**. There is no frontend polling and no IPC command on
-the hot path.
-
-```
-Rust collector thread ──emit("metrics")──▶  React listen("metrics") ──▶ UI
-```
-
-- `src-tauri/src/lib.rs` — the self-contained collector thread + `run()`.
-- `src-tauri/src/main.rs` — one-line entry: `gkcc_lib::run()`.
-- `src/App.tsx` — layout, theme, and the `listen()` subscription.
-- `src/components/Gauge.tsx` — radial gauge (SVG).
-- `src/components/CoreBars.tsx` — live per-core vertical usage bars.
-- `src/components/Odometer.tsx` — odometer with smooth 60fps interpolation.
-- `src/components/Globe.tsx` — spinning wireframe globe; the pop-out sidebar plots your public-IP location.
-
-## Data sources
-
-To avoid a `windows-core` dependency conflict (two versions in the graph broke
-the build), GPU and WMI data are gathered by shelling out rather than linking
-native crates. A single PowerShell process per second runs `nvidia-smi` and the
-CIM queries and returns one JSON blob, parsed with `serde_json` on a background
-thread; the 500ms emit loop reads the latest snapshot.
-
-| Metric | Source |
-| --- | --- |
-| CPU load (global + per-core), per-core frequency, memory, swap, disks, network throughput | `sysinfo` 0.30 |
-| GPU usage, temp, VRAM, power, clocks, fan | `nvidia-smi` (shell-out) |
-| Disk IOPS / bytes-per-sec / active-time, process & thread counts, context switches/s, syscalls/s | PowerShell `Get-CimInstance` on `root\cimv2` perf classes |
-| **CPU package/die temperature** | PowerShell CIM on `root\LibreHardwareMonitor` (see below) |
-| Your IP geolocation (globe) | `https://ipapi.co/json/` fetched from the webview |
-
-Each source degrades gracefully: no NVIDIA driver → GPU card shows "No GPU";
-LibreHardwareMonitor not running → CPU temp shows **N/A**.
-
-### CPU temperature requires LibreHardwareMonitor
-
-Windows does not expose CPU temperature through any standard OS API, so accurate
-readings need a helper that ships its own signed kernel driver. This app reads
-from **[LibreHardwareMonitor](https://github.com/LibreHardwareMonitor/LibreHardwareMonitor)**
-(free, open source) via its WMI namespace.
-
-To enable CPU temp:
-
-1. Install / run LibreHardwareMonitor.
-2. In its menu enable **Options → Remote Web Server is optional**, but you must enable **Options → WMI** (publishes sensors to `root\LibreHardwareMonitor`).
-3. Run it **as administrator** (driver access) — ideally set it to start with Windows, elevated.
-
-GPU temperature comes from `nvidia-smi` and needs no helper.
-
-## The odometer resets each launch
-
-The displayed total is `monotonic_elapsed` since the program opened. On every
-launch the app clears its cache directory and removes the stored `odometer.txt`,
-so runtime always starts from zero. Within a session the value is exact
-(monotonic clock, immune to polling jitter).
-
-## Disk usage
-
-The working folder can balloon to several GB — this is **build cache, not the
-app**: `src-tauri/target` (Rust compiled dependencies) and `node_modules`.
-Both regenerate on the next build and are safe to delete; the shipped installer
-under `src-tauri/target/release/bundle` is only a few MB. Run `clean.cmd` to
-reclaim space, then `npm install` + `npm run tauri dev` to rebuild. The release
-profile in `Cargo.toml` is tuned for a small binary (`opt-level="z"`, LTO,
-strip).
-
-## Prerequisites
-
-Install these once on the machine (Windows):
-
-1. **Node.js LTS** (includes npm) — https://nodejs.org
-2. **Rust** (via rustup, gives `cargo`) — https://rustup.rs
-3. **Microsoft C++ Build Tools** — the "Desktop development with C++" workload
-   from the Visual Studio Build Tools installer (Tauri compiles native code with MSVC).
-4. **WebView2 Runtime** — preinstalled on Windows 10/11; otherwise grab the
-   Evergreen runtime from Microsoft.
-
-Optional, for full functionality at runtime (not needed to build):
-
-- **NVIDIA driver** (ships `nvidia-smi`) — required for the GPU card.
-- **[LibreHardwareMonitor](https://github.com/LibreHardwareMonitor/LibreHardwareMonitor)**,
-  running with WMI enabled and as admin — required for CPU temperature (see above).
-- **Internet connection** — for the globe's coastlines and your IP/ISP lookup.
-
-### Project dependencies (installed automatically)
-
-These come down with `npm install` / `cargo build` — you don't add them by hand:
-
-- npm: `react`, `react-dom`, `@tauri-apps/api`, `@tauri-apps/cli`, `@tailwindcss/vite`,
-  `tailwindcss`, `vite`, `@vitejs/plugin-react`, `typescript`, and the `@types/*`.
-- Cargo: `tauri`, `tauri-build`, `serde`, `serde_json`, `sysinfo`.
-
-## Development
+## Quick start
 
 ```bash
-npm install            # pulls all JS dependencies
-npm run tauri dev      # builds Rust (pulls crates) + runs the desktop app
-npm run tauri build    # release bundle
+unzip gkcc-linux.zip
+cd gkcc-linux
+./start.sh
 ```
 
-## Tech
+That's it. `start.sh` takes care of everything:
 
-React 18, Vite, Tailwind CSS v4, Tauri 2, `sysinfo` 0.30, `serde_json`, plus
-`nvidia-smi` + PowerShell shell-outs for GPU and sensors. The globe's coastlines
-are fetched as 110m TopoJSON from a CDN at runtime and decoded in-app (no extra
-npm dependency); offline it falls back to just the graticule. Type: Poppins
-(display) + Inter (UI) + a monospace stack.
+1. **Installs what's missing** (first run only): the system libraries Tauri
+   needs (WebKitGTK and build tools), Node.js, and Rust. It shows you the exact
+   command and asks before installing; you'll type your password once.
+2. **Downloads the app's dependencies** (first run only).
+3. **Builds and opens the app.** The first build takes a few minutes; after
+   that it opens in seconds.
 
-> The Location sidebar combines public IP/ISP/geo (ipapi.co + ipify, online)
-> with local Wi-Fi/router/DNS detail from the `get_network_info` backend command
-> (PowerShell + `netsh`).
+Keep the terminal open while you use the app; closing it closes the app.
+
+> No `unzip` command? Install it with `sudo apt install unzip` (or your
+> distro's equivalent), or extract the zip with your file manager.
+
+## Supported systems
+
+`start.sh` knows how to install the prerequisites on:
+
+| Distro family | Package manager |
+| --- | --- |
+| Ubuntu, Debian, Linux Mint, Pop!_OS | `apt` |
+| Fedora, RHEL, Rocky, Alma | `dnf` |
+| Arch, Manjaro, EndeavourOS | `pacman` |
+| openSUSE | `zypper` |
+
+On anything else, install WebKitGTK 4.1 (see the
+[Tauri prerequisites](https://v2.tauri.app/start/prerequisites/#linux)),
+Node.js 20+ and Rust yourself, then run `./start.sh`.
+
+Tested on Ubuntu 26.04 (under WSL 2 on Windows 11).
+
+## What you'll see, and where it comes from
+
+| Reading | Source | Notes |
+| --- | --- | --- |
+| CPU load, per-core bars, frequency, memory, swap, storage, network speed | `sysinfo` | Works everywhere |
+| Disk IOPS, MB/s, active time | `/proc/diskstats` | Physical disks only, so partitions aren't double-counted |
+| Processes, threads, context switches/s | `/proc` | |
+| Syscalls/s | — | Linux has no system-wide counter, so this shows **N/A** |
+| CPU temperature | Kernel hardware sensors (`coretemp`, `k10temp`, …) | No extra software needed |
+| GPU card | `nvidia-smi` | Needs the proprietary NVIDIA driver; shows "No GPU" otherwise |
+| Wi-Fi, router, DNS (Location panel) | `ip`, `iw`, `nmcli`, `resolvectl` | Wi-Fi details need `iw` (`sudo apt install iw`) |
+| Public IP, ISP, globe location | ipapi.co, ipify | Needs an internet connection |
+
+## Troubleshooting
+
+**The window is blank or white.**
+This is a known WebKitGTK problem with some graphics drivers. The app turns on
+the fix automatically for NVIDIA cards; on other hardware, start it with:
+
+```bash
+WEBKIT_DISABLE_DMABUF_RENDERER=1 ./start.sh
+```
+
+**"CPU temp N/A".**
+Your system isn't exposing a CPU sensor. On most PCs `sudo apt install
+lm-sensors && sudo sensors-detect` fixes it. Inside WSL or a virtual machine
+there are no sensors to read, so N/A is expected there.
+
+**`libEGL warning: ... Permission denied` in the terminal.**
+Harmless. WebKit can't use the GPU for drawing and falls back to the CPU; the
+app works normally.
+
+**`npm install failed`.**
+Delete the downloaded dependencies and try again:
+
+```bash
+./clean.sh
+./start.sh
+```
+
+**"Node.js is too old".**
+Version 20 or newer is needed. Older distros ship an outdated Node; install the
+LTS release from [nodejs.org](https://nodejs.org) and run `./start.sh` again.
+
+## Running under WSL (Windows Subsystem for Linux)
+
+It works: the window appears on your Windows desktop like any other app.
+Unzip it inside your Linux home folder (for example `~/gkcc-linux`), not under
+`/mnt/c/...`, where builds are much slower. Inside WSL the CPU temperature
+shows N/A and the Wi-Fi details are empty, because Windows owns that hardware.
+
+## Freeing up disk space
+
+The folder grows to a few GB after the first build. That's build cache, not
+the app. Run `./clean.sh` to delete it; the next `./start.sh` rebuilds it.
+
+## Uninstalling
+
+Delete the `gkcc-linux` folder, plus `~/.local/share/com.gkcc.app/` (the
+app's odometer file and web cache, a few MB at most). Node.js, Rust and
+the system libraries stay installed; remove them with your package manager
+(and `rustup self uninstall` for Rust) if you no longer need them.
+
+## Files
+
+```
+gkcc-linux/
+├── start.sh          one-step setup + launch
+├── clean.sh          delete build caches
+├── src/              the interface (React + TypeScript)
+└── src-tauri/        the backend (Rust)
+    └── src/linux.rs  the Linux data sources
+```
+
+---
+
+made with ♥ by gkson
