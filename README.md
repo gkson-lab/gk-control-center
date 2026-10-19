@@ -32,6 +32,14 @@ Each guide covers prerequisites, what each reading is based on, and troubleshoot
 
 There are hidden achievements. No hints here.
 
+## Expansion pack: Always on
+
+This branch keeps the app useful while its window is out of the way. Settings live on the new **Always on** tab (key 4) and are saved to `always-on.json` in the app's data folder.
+
+- **Tray icon:** its tooltip shows CPU, GPU and memory. Left-click brings the window back; the right-click menu has Show, Overlay and Quit. Turn on "Keep running in the tray" and closing the window hides it instead of quitting.
+- **Overlay:** a small always-on-top window with CPU, GPU and memory scales, for games and renders. It opens in the top-right corner; drag it anywhere.
+- **Alerts:** desktop notifications for CPU temperature, GPU temperature, processor load, memory and drive space, each with its own limit. A reading has to stay past its limit for 10 seconds, and the same alert waits 5 minutes before repeating. "Send a test notification" checks that your system lets the app notify you.
+
 ## How it works
 
 A Rust thread collects readings twice a second and pushes them to the window as an event; the interface only listens. Per-platform data sources live in `src-tauri/src/lib.rs` (Windows) and `src-tauri/src/linux.rs` (Linux). The interface is in `src/`, and the design decisions behind it, with a reason for each, are in [DESIGN.md](DESIGN.md).

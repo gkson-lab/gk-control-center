@@ -399,9 +399,57 @@ fn collector_loop(handle: AppHandle, odometer_path: PathBuf, odometer_base: f64,
             os_version: os_version.clone(),
         };
 
+        // Always-on pack: tray tooltip and alert checks every 2 s.
+        if tick % 4 == 0 {
+            let fullest = metrics
+                .disks
+                .iter()
+                .filter(|d| d.total_gb > 0.0)
+                .map(|d| (d.name.clone(), d.used_gb / d.total_gb * 100.0))
+                .max_by(|a, b| a.1.total_cmp(&b.1));
+            always_on::tick(
+                &handle,
+                always_on::Readings {
+                    cpu_load: metrics.cpu_usage as f64,
+                    cpu_temp: metrics.cpu_temp_available.then_some(metrics.cpu_temp_c as f64),
+                    gpu_temp: metrics.gpu.available.then_some(metrics.gpu.temp_c as f64),
+                    gpu_load: metrics.gpu.available.then_some(metrics.gpu.usage as f64),
+                    memory: metrics.memory_usage_percent,
+                    disk_full: fullest,
+                },
+            );
+        }
+
         let _ = handle.emit("metrics", metrics);
         thread::sleep(Duration::from_millis(EMIT_INTERVAL_MS));
     }
+}
+
+mod always_on;
+
+#[tauri::command]
+fn get_always_on(state: tauri::State<always_on::AlwaysOn>) -> always_on::Settings {
+    state.settings()
+}
+
+#[tauri::command]
+fn set_always_on(settings: always_on::Settings, state: tauri::State<always_on::AlwaysOn>) -> Result<(), String> {
+    state.save(settings)
+}
+
+#[tauri::command]
+fn set_overlay(show: bool, app: AppHandle) -> Result<(), String> {
+    always_on::set_overlay(&app, show)
+}
+
+#[tauri::command]
+fn overlay_visible(app: AppHandle) -> bool {
+    always_on::overlay_visible(&app)
+}
+
+#[tauri::command]
+fn test_alert(app: AppHandle) -> Result<(), String> {
+    always_on::notify_test(&app)
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -416,12 +464,30 @@ pub fn run() {
     }
 
     tauri::Builder::default()
+        .plugin(tauri_plugin_notification::init())
+        .on_window_event(|window, event| {
+            // Always-on pack: closing the main window hides it to the tray when asked to.
+            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                let keep = window.label() == "main"
+                    && window.app_handle().try_state::<always_on::AlwaysOn>().is_some_and(|s| s.settings().close_to_tray);
+                if keep {
+                    api.prevent_close();
+                    let _ = window.hide();
+                } else if window.label() == "main" {
+                    // Quitting from the main window also closes the overlay.
+                    window.app_handle().exit(0);
+                }
+            }
+        })
         .setup(|app| {
             let data_dir = app
                 .path()
                 .app_data_dir()
                 .unwrap_or_else(|_| PathBuf::from("."));
             let _ = std::fs::create_dir_all(&data_dir);
+
+            app.manage(always_on::AlwaysOn::load(data_dir.join("always-on.json")));
+            always_on::setup_tray(app.handle())?;
 
             // Reset the odometer on every launch so runtime always starts from
             // zero. (We only remove our own odometer file — never the app cache
@@ -439,7 +505,14 @@ pub fn run() {
 
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![get_network_info])
+        .invoke_handler(tauri::generate_handler![
+            get_network_info,
+            get_always_on,
+            set_always_on,
+            set_overlay,
+            overlay_visible,
+            test_alert
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
