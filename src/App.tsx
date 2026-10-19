@@ -8,6 +8,7 @@ import { ThemeSwitch } from './components/ThemeSwitch';
 import { Dialog } from './components/Dialog';
 import { FactsDrawer } from './components/FactsDrawer';
 import { AchievementToast } from './components/AchievementToast';
+import { UpdateDialog } from './components/UpdateDialog';
 import { Overview } from './views/Overview';
 import { Hardware } from './views/Hardware';
 import { Network } from './views/Network';
@@ -48,6 +49,7 @@ function Shell() {
   const [section, setSection] = useState<string | null>(null);
   const [factsOpen, setFactsOpen] = useState(false);
   const [keysOpen, setKeysOpen] = useState(false);
+  const [updatesOpen, setUpdatesOpen] = useState(false);
   const diskOps = useDiskOpsTotal(metrics);
   const { unlock } = useAchievements();
 
@@ -89,7 +91,7 @@ function Shell() {
   // App-wide shortcuts. Ignored while a dialog is open or a modifier is held.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.ctrlKey || e.metaKey || e.altKey || factsOpen || keysOpen) return;
+      if (e.ctrlKey || e.metaKey || e.altKey || factsOpen || keysOpen || updatesOpen) return;
       const t = e.target as HTMLElement | null;
       if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
       const n = Number(e.key);
@@ -101,7 +103,7 @@ function Shell() {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [factsOpen, keysOpen, paused, setPaused, choice, setChoice, go, metrics]);
+  }, [factsOpen, keysOpen, updatesOpen, paused, setPaused, choice, setChoice, go, metrics]);
 
   const current = VIEWS.find((v) => v.id === view) ?? VIEWS[0];
 
@@ -171,9 +173,17 @@ function Shell() {
         >
           gkson
         </button>
+        <button
+          type="button"
+          onClick={() => setUpdatesOpen(true)}
+          className="ml-auto min-h-11 rounded-control px-3 hover:bg-sunken hover:text-ink"
+        >
+          Updates
+        </button>
       </footer>
       </div>
 
+      <UpdateDialog open={updatesOpen} onClose={() => setUpdatesOpen(false)} />
       {metrics && <FactsDrawer open={factsOpen} onClose={() => setFactsOpen(false)} m={metrics} diskOpsTotal={diskOps} />}
       <Dialog open={keysOpen} onClose={() => setKeysOpen(false)} title="Keyboard shortcuts">
         <dl className="m-0 grid grid-cols-[auto_1fr] gap-x-6 gap-y-3">

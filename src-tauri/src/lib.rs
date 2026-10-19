@@ -416,6 +416,9 @@ pub fn run() {
     }
 
     tauri::Builder::default()
+        // Distribution pack: in-app updates from GitHub releases, and relaunch after installing.
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_process::init())
         .setup(|app| {
             let data_dir = app
                 .path()

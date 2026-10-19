@@ -32,6 +32,25 @@ Each guide covers prerequisites, what each reading is based on, and troubleshoot
 
 There are hidden achievements. No hints here.
 
+## Expansion pack: Distribution
+
+This branch turns the app into something you install instead of build:
+
+- **Installers:** `npm run tauri build` produces a Windows installer (`.exe`, per-user, no admin needed) and `.msi`, a Linux `.deb`, `.rpm` and AppImage, and a macOS `.dmg` when built on a Mac.
+- **Updates:** the **Updates** button in the footer checks GitHub releases, shows what's new, and installs the update and restarts in one click. Updates are signed, and the app refuses any download that doesn't match the public key in `tauri.conf.json`.
+- **Automatic builds:** `.github/workflows/release.yml` builds all three systems when you push a version tag (`git tag v1.2.0 && git push origin v1.2.0`) and attaches the installers plus `latest.json` (what the updater reads) to a draft release. `.github/workflows/ci.yml` type-checks, builds and runs the backend tests on every push.
+
+### One-time setup for releases
+
+The updater key pair was generated on the build PC. The **private key never goes in the repo**: it lives at `%USERPROFILE%\.tauri\gklabs-device-manager.key`. Add it to GitHub once, under **Settings > Secrets and variables > Actions**:
+
+| Secret | Value |
+| --- | --- |
+| `TAURI_SIGNING_PRIVATE_KEY` | the contents of that key file |
+| `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` | leave empty (the key has no password) |
+
+Keep a backup of the key file: without it, installed copies can't verify future updates.
+
 ## How it works
 
 A Rust thread collects readings twice a second and pushes them to the window as an event; the interface only listens. Per-platform data sources live in `src-tauri/src/lib.rs` (Windows) and `src-tauri/src/linux.rs` (Linux). The interface is in `src/`, and the design decisions behind it, with a reason for each, are in [DESIGN.md](DESIGN.md).
